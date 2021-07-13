@@ -2,12 +2,12 @@ use lindera::tokenizer::Tokenizer;
 
 fn main() {
     println!("Hello, world!");
-    let mut text = "日本語とenglishが混在mixしたテキストですが何か問題でも？ This is a pen. I am Tom. I'm Andy. What's this? rustで実行する。あれを動かした。";
-    let mut tokens = tokenize_japanese(text);
-    println!("{:?}", tokens);
-    let mut tokens2 = tokenize_japanese_2(text);
-    println!("{:?}", tokens2);
+    let text = "日本語とenglishが混在mixしたテキストですが何か問題でも？ This is a pen. I am Tom. I'm Andy. What's this? rustで実行する。あれを動かした。C#で書く。";
+    println!("{}", text);
+    println!("{:?}", tokenize_japanese(text));
+    println!("{:?}", tokenize_japanese_2(text));
     println!("{:?}", tokenize_japanese_3(text));
+    println!("{:?}", tokenize_japanese_4(text));
 }
 
 // https://github.com/mattico/elasticlunr-rs/blob/master/src/pipeline.rs
@@ -25,7 +25,19 @@ pub fn tokenize_japanese(text: &str) -> Vec<String> {
         })
         .collect()
 }
-// 英単語も含めたい。できれば固有名詞だけ。Python, Rubyなど技術用語。
+// 英単語も含めたい。Some("UNK")に入っているようだ。除外したらたしかに英単語が入った。しかし1文字のものや半角記号まで含まれてしまう
+pub fn tokenize_japanese_2(text: &str) -> Vec<String> {
+    let mut tokenizer = Tokenizer::new("decompose", "");
+    tokenizer
+        .tokenize(text)
+        .into_iter()
+        .filter_map(|tok| match tok.detail.get(0).map(|d| d.as_str()) {
+            Some("助詞") | Some("助動詞") | Some("記号") => None,
+            _ => Some(tok.text.to_string()),
+        })
+        .collect()
+}
+// 英単語も含めたい。ただし１文字なら対象外にする。
 pub fn tokenize_japanese_3(text: &str) -> Vec<String> {
     let mut tokenizer = Tokenizer::new("decompose", "");
     tokenizer
@@ -38,8 +50,8 @@ pub fn tokenize_japanese_3(text: &str) -> Vec<String> {
         })
         .collect()
 }
-// 英単語も含めたい。できれば固有名詞だけ。Python, Rubyなど技術用語。
-pub fn tokenize_japanese_3(text: &str) -> Vec<String> {
+// 動詞は基本形にしたかったができなかった。
+pub fn tokenize_japanese_4(text: &str) -> Vec<String> {
     let mut tokenizer = Tokenizer::new("decompose", "");
     for token in tokenizer.tokenize(text) {
         println!("{:?}\t{}", token.detail, token.text);
